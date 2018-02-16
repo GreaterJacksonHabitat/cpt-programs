@@ -23,16 +23,22 @@ if ( ! class_exists( 'CPT_Programs' ) ) {
 	class CPT_Programs {
 		
 		/**
-		 * @var			CPT_Programs $plugin_data Holds Plugin Header Info
+		 * @var			array $plugin_data Holds Plugin Header Info
 		 * @since		1.0.0
 		 */
 		public $plugin_data;
 		
 		/**
-		 * @var			CPT_Programs $admin_errors Stores all our Admin Errors to fire at once
+		 * @var			array $admin_errors Stores all our Admin Errors to fire at once
 		 * @since		1.0.0
 		 */
 		private $admin_errors;
+		
+		/**
+		 * @var         RBM_CPT_Programs Holds our CPT
+		 * @since       1.0.0
+		 */
+		public $cpt;
 
 		/**
 		 * Get active instance
@@ -60,7 +66,19 @@ if ( ! class_exists( 'CPT_Programs' ) ) {
 			
 			if ( version_compare( get_bloginfo( 'version' ), '4.4' ) < 0 ) {
 				
-				$this->admin_errors[] = sprintf( _x( '%s requires v%s of %s or higher to be installed!', 'Outdated Dependency Error', 'cpt-programs' ), '<strong>' . $this->plugin_data['Name'] . '</strong>', '4.4', '<a href="' . admin_url( 'update-core.php' ) . '"><strong>WordPress</strong></a>' );
+				$this->admin_errors[] = sprintf( __( '%s requires v%s of %s or higher to be installed!', 'cpt-programs' ), '<strong>' . $this->plugin_data['Name'] . '</strong>', '4.4', '<a href="' . admin_url( 'update-core.php' ) . '"><strong>WordPress</strong></a>' );
+				
+				if ( ! has_action( 'admin_notices', array( $this, 'admin_errors' ) ) ) {
+					add_action( 'admin_notices', array( $this, 'admin_errors' ) );
+				}
+				
+				return false;
+				
+			}
+			
+			if ( ! class_exists( 'RBM_CPTS' ) ) {
+				
+				$this->admin_errors[] = sprintf( __( '%s requires %sRBP CPTs%s to be installed!', 'cpt-programs' ), '<strong>' . $this->plugin_data['Name'] . '</strong>', '<a href="https://github.com/realbig/rbm-cpts/" target="_blank">', '</a>' );
 				
 				if ( ! has_action( 'admin_notices', array( $this, 'admin_errors' ) ) ) {
 					add_action( 'admin_notices', array( $this, 'admin_errors' ) );
@@ -162,6 +180,10 @@ if ( ! class_exists( 'CPT_Programs' ) ) {
 		 */
 		private function require_necessities() {
 			
+			// CPT functionality
+			require_once __DIR__ . '/core/cpt/class-rbm-cpt-program.php';
+			$this->cpt = new RBM_CPT_Programs();
+			
 		}
 		
 		/**
@@ -247,7 +269,7 @@ if ( ! class_exists( 'CPT_Programs' ) ) {
  * @since	  1.0.0
  * @return	  \CPT_Programs The one true CPT_Programs
  */
-add_action( 'plugins_loaded', 'cpt_programs_load' );
+add_action( 'plugins_loaded', 'cpt_programs_load', 999 );
 function cpt_programs_load() {
 
 	require_once __DIR__ . '/core/cpt-programs-functions.php';
